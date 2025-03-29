@@ -1,0 +1,102 @@
+---
+- name: Instalar o GitHub CLI
+  hosts: localhost
+  become: true # Eleva privilégios para executar comandos como sudo
+  tasks:
+    - name: Adicionar o repositório oficial do GitHub CLI
+      apt_key:
+        url: https://cli.github.com/packages/githubcli-archive-keyring.gpg
+        state: present
+      tags:
+        - install
+        - github-cli
+
+    - name: Adicionar o repositório ao sources.list.d
+      copy:
+        dest: /etc/apt/sources.list.d/github-cli.list
+        content: |
+          deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main
+      tags:
+        - install
+        - github-cli
+
+    - name: Atualizar a lista de pacotes
+      apt:
+        update_cache: yes
+      tags:
+        - install
+        - github-cli
+
+    - name: Instalar o GitHub CLI
+      apt:
+        name: gh
+        state: present
+      tags:
+        - install
+        - github-cli
+
+    - name: Verificar a instalação do GitHub CLI
+      command: gh --version
+      register: gh_version_output
+      tags:
+        - install
+        - github-cli
+
+    - name: Exibir a versão instalada do GitHub CLI
+      debug:
+        msg: "{{ gh_version_output.stdout }}"
+      tags:
+        - install
+        - github-cli
+
+    - name: Autenticar no GitHub CLI
+      command: gh auth login
+      args:
+        creates: ~/.config/gh/hosts.yml
+      tags:
+        - auth
+        - github-cli
+
+    - name: Verificar autenticação no GitHub CLI
+      command: gh auth status
+      register: auth_status_output
+      failed_when: "'Logged in to' not in auth_status_output.stdout"
+      tags:
+        - auth
+        - github-cli
+
+    - name: Exibir status da autenticação
+      debug:
+        msg: "{{ auth_status_output.stdout }}"
+      tags:
+        - auth
+        - github-cli
+
+    - name: Atualizar a lista de pacotes
+      apt:
+        update_cache: yes
+      tags:
+        - install
+        - git
+
+    - name: Instalar o Git
+      apt:
+        name: git
+        state: present
+      tags:
+        - install
+        - git
+
+    - name: Verificar a instalação do Git
+      command: git --version
+      register: git_version_output
+      tags:
+        - install
+        - git
+
+    - name: Exibir a versão instalada do Git
+      debug:
+        msg: "Git instalado: {{ git_version_output.stdout }}"
+      tags:
+        - install
+        - git
