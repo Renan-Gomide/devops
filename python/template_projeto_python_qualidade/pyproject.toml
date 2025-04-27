@@ -1,0 +1,31 @@
+[tool.poetry]
+name = "meu-projeto"
+version = "0.1.0"
+description = "Projeto Python com Poetry"
+authors = ["Renan <renan@email.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+pandas = "^2.2.0"
+
+[tool.poetry.group.dev.dependencies]
+black = "^24.0"
+isort = "^5.12.0"
+flake8 = "^7.0.0"
+mypy = "^1.8.0"
+pre-commit = "^3.6.0"
+
+black = "^24.0"
+isort = "^5.12"
+pytest = "^8.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 88
+
+[tool.isort]
+profile = "black"

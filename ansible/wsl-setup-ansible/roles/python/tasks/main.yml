@@ -1,0 +1,126 @@
+---
+- name: Instalar dependências do Pyenv
+  apt:
+    name:
+      - libbz2-dev
+      - libffi-dev
+      - liblzma-dev
+      - libncurses5-dev
+      - libncursesw5-dev
+      - libreadline-dev
+      - libsqlite3-dev
+      - libssl-dev
+      - libxml2-dev
+      - libxmlsec1-dev
+      - llvm
+      - python3-openssl
+      - tk-dev
+      - xz-utils
+      - zlib1g-dev
+    state: present
+    update_cache: true
+
+- name: Instalar Pyenv
+  become: false
+  git:
+    repo: https://github.com/pyenv/pyenv.git
+    dest: "{{ lookup('env', 'HOME') }}/.pyenv"
+
+- name: Configurar Pyenv no .zshrc e no .bashrc
+  become: false
+  blockinfile:
+    path: "{{ item }}"
+    block: |
+      # Configuração do Pyenv
+      export PYENV_ROOT="$HOME/.pyenv"
+      export PATH="$PYENV_ROOT/bin:$PATH"
+      eval "$(pyenv init --path)"
+      eval "$(pyenv init -)"
+    insertafter: EOF
+  loop:
+    - "{{ lookup('env', 'HOME') }}/.bashrc"
+    - "{{ lookup('env', 'HOME') }}/.zshrc"
+  
+
+- name: Instalar Pipx
+  apt:
+    name: pipx
+    state: present
+
+- name: Adicionar pipx ao PATH
+  become: false
+  shell: |
+    pipx ensurepath
+  environment:
+    PATH: "{{ lookup('env', 'HOME') }}/.local/bin:{{ ansible_env.PATH }}"
+
+# - name: Instalar Poetry via pipx
+#   shell: |
+#     pipx install poetry
+#   environment:
+#     PATH: "{{ lookup('env', 'HOME') }}/.local/bin:{{ ansible_env.PATH }}"
+
+# - name: Garantir que ~/.local/bin existe
+#   file:
+#     path: "/home/renan-gomide/.local/bin"
+#     state: directory
+#     mode: '0755'
+#     owner: renan-gomide
+#     group: renan-gomide
+
+# - name: Adicionar ~/.local/bin ao PATH no .zshrc
+#   become: true
+#   become_user: renan-gomide
+#   lineinfile:
+#     path: "/home/renan-gomide/.zshrc"
+#     create: yes
+#     line: 'export PATH="$HOME/.local/bin:$PATH"'
+#     state: present
+
+# - name: Instalar poetry via pipx no usuário renan-gomide
+#   become: true
+#   become_user: renan-gomide
+#   shell: |
+#     pipx install poetry --force --include-deps
+#   environment:
+#     PATH: "/home/renan-gomide/.local/bin:/home/renan-gomide/.local/pipx/bin:{{ ansible_env.PATH }}"
+
+- name: Detectar usuário não-root logado (caso aplicável)
+  command: whoami
+  register: detected_user
+  failed_when: false
+  changed_when: false
+
+- name: Exibir o valor da variável detected_user
+  debug:
+    msg: "Usuário detectado: {{ detected_user.stdout }}"
+    
+- name: Definir variáveis com base no usuário detectado ou padrão
+  set_fact:
+    target_user: "{{ detected_user.stdout if detected_user.stdout is defined else ansible_user_id }}"
+    user_home: "{{ lookup('ansible.builtin.env', 'HOME') if target_user == ansible_user else '/home/' + target_user }}"
+
+- name: Exibir o valor da variável target_user
+  debug:
+    msg: "Target user: {{ target_user }}"
+
+- name: Instalar poetry via pipx
+  become: true
+  become_user: "{{ target_user }}"
+  shell: |
+    pipx install poetry --force --include-deps
+  environment:
+    PATH: "{{ user_home }}/.local/bin:{{ user_home }}/.local/pipx/bin:{{ ansible_env.PATH }}"
+    HOME: "{{ user_home }}"
+  args:
+    creates: "{{ user_home }}/.local/bin/poetry"
+
+- name: Adicionar ~/.local/bin e ~/.local/pipx/bin ao PATH no .zshrc
+  become: true
+  become_user: "{{ target_user }}"
+  lineinfile:
+    path: "{{ user_home }}/.zshrc"
+    create: yes
+    line: 'export PATH="$HOME/.local/bin:$HOME/.local/pipx/bin:$PATH"'
+    insertafter: EOF
+    state: present

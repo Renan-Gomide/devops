@@ -1,0 +1,23 @@
+- name: Instalar NVM
+  become: false
+  shell: |
+    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+  args:
+    creates: ~/.nvm
+
+- name: Adicionar NVM ao .zshrc
+  become: false
+  lineinfile:
+    path: ~/.zshrc
+    line: 'export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"'
+    insertafter: EOF
+
+- name: Instalar Node.js LTS com NVM
+  become: false
+  shell: |
+    export NVM_DIR="$HOME/.nvm"
+    source "$NVM_DIR/nvm.sh"
+    nvm install --lts
+  args:
+    executable: /bin/bash

@@ -1,0 +1,17 @@
+---
+- name: Setup completo do ambiente WSL2
+  hosts: localhost
+  become: yes
+  connection: local
+  gather_facts: yes
+
+  roles:
+    - role: base
+    - role: zsh
+    - role: docker
+    - role: nodejs
+    - role: python
+      tags: python
+    - role: git
+    - role: github-cli
+      tags: github-cli

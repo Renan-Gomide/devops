@@ -1,0 +1,76 @@
+version: '3'
+
+vars:
+  project_name:
+    description: "Nome do novo projeto (ex: my_app)"
+    default: ""
+  author:
+    description: "Autor ou organização"
+    default: Renan Gomide"
+  license:
+    description: "Tipo de licença (ex: MIT)"
+    default: "MIT"
+  python_version:
+    description: "Versão do Python (ex: 3.10)"
+    default: "3.12"
+
+tasks:
+  init:
+    desc: "Cria esqueleto de projeto Python com Poetry"
+    cmds:
+      - |
+        if [ -z "{{.project_name}}" ] || [ -z "{{.author}}" ]; then
+          echo "Erro: defina project_name e author (via export ou --project_name/--author)"
+          exit 1
+        fi
+      # Cria novo projeto com src layout
+      - poetry new "{{.project_name}}" --src
+      - cd "{{.project_name}}"
+      # Define autor e licença no pyproject.toml (se desejar customizar mais)
+      - poetry env use python{{.python_version}}
+      - poetry add --dev pytest flake8 isort
+      # Inicializa Git
+      - git init -b main
+      - git add .
+      - git commit -m "chore: projeto inicial via Poetry"
+      # Cria workflow básico de CI no GitHub Actions
+      - mkdir -p .github/workflows
+      - cat > .github/workflows/ci.yml <<EOF
+        name: CI
+
+        on:
+          push:
+            branches: [ main ]
+          pull_request:
+            branches: [ main ]
+
+        jobs:
+          lint:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@v4
+              - name: Setup Python
+                uses: actions/setup-python@v4
+                with:
+                  python-version: "{{.python_version}}"
+              - name: Install dependencies
+                run: |
+                  poetry install --no-root
+              - name: Lint
+                run: |
+                  poetry run isort --check-only .
+                  poetry run flake8 src tests
+          test:
+            runs-on: ubuntu-latest
+            needs: lint
+            steps:
+              - uses: actions/checkout@v4
+              - name: Setup Python
+                uses: actions/setup-python@v4
+                with:
+                  python-version: "{{.python_version}}"
+              - name: Install & Test
+                run: |
+                  poetry install --no-root
+                  poetry run pytest
+        EOF

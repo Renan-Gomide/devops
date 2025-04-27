@@ -1,0 +1,26 @@
+- name: Instalar Task (taskfile.dev)
+  shell: curl -sL https://taskfile.dev/install.sh | sh
+  args:
+    executable: /bin/bash
+    
+- name: Atualizar pacotes
+  apt:
+    update_cache: yes
+    upgrade: dist
+
+- name: Instalar pacotes essenciais
+  apt:
+    name:
+      - build-essential
+      - curl
+      - git
+      - htop
+      - python3
+      - python3-pip
+      - software-properties-common
+      - tree
+      - unzip
+      - wget
+      - zip
+      - zsh
+    state: present

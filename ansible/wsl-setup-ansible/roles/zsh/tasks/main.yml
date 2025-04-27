@@ -1,0 +1,42 @@
+---
+# roles/zsh/tasks/main.yml
+- name: Garantir que Zsh está instalado
+  become: yes
+  apt:
+    name: zsh
+    state: present
+
+- name: Definir Zsh como shell padrão
+  become: yes
+  user:
+    name: "{{ ansible_user }}"
+    shell: /usr/bin/zsh
+  when: ansible_env.SHELL != '/usr/bin/zsh'
+
+- name: Instalar Oh My Zsh
+  become: false
+  shell: |
+    sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
+  args:
+    creates: ~/.oh-my-zsh
+
+- name: Instalar tema Powerlevel10k
+  become: false
+  git:
+    repo: https://github.com/romkatv/powerlevel10k.git
+    dest: ~/.oh-my-zsh/custom/themes/powerlevel10k
+    depth: 1
+
+- name: Configurar tema e plugins
+  become: false
+  lineinfile:
+    path: ~/.zshrc
+    regexp: '^ZSH_THEME='
+    line: 'ZSH_THEME="powerlevel10k/powerlevel10k"'
+
+- name: Plugins
+  become: false
+  lineinfile:
+    path: ~/.zshrc
+    regexp: '^plugins='
+    line: 'plugins=(git docker python pip z fzf)'

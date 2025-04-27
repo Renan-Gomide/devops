@@ -1,0 +1,45 @@
+---
+- name: Adicionar chave GPG do repositório GitHub CLI
+  get_url:
+    url: https://cli.github.com/packages/githubcli-archive-keyring.gpg
+    dest: /usr/share/keyrings/githubcli-archive-keyring.gpg
+    mode: '0644'
+
+- name: Adicionar o repositório oficial do GitHub CLI
+  apt_repository:
+    repo: "deb [arch=amd64 signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main"
+    state: present
+    filename: github-cli
+
+- name: Atualizar a lista de pacotes
+  apt:
+    update_cache: yes
+
+- name: Instalar o GitHub CLI
+  apt:
+    name: gh
+    state: present
+
+- name: Verificar a instalação do GitHub CLI
+  command: gh --version
+  register: gh_version_output
+  changed_when: false
+
+- name: Exibir a versão instalada do GitHub CLI
+  debug:
+    msg: "GitHub CLI instalado: {{ gh_version_output.stdout }}"
+
+- name: Autenticar no GitHub CLI
+  shell: echo "{{ github_token }}" | gh auth login --with-token
+  args:
+    creates: ~/.config/gh/hosts.yml
+  become: false
+
+- name: Verificar autenticação no GitHub CLI
+  command: gh auth status
+  register: auth_status_output
+  failed_when: "'Logged in to' not in auth_status_output.stdout"
+
+- name: Exibir status da autenticação
+  debug:
+    msg: "{{ auth_status_output.stdout }}"
